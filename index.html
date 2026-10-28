@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toma de Horas - Salas Hub Providencia</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            gob: {
+              blue: '#002B49',
+              darkBlue: '#001D33',
+              accentBlue: '#006699',
+              red: '#EA2027',
+              grayBg: '#F3F4F6',
+              border: '#D1D5DB'
+            },
+            provi: {
+              navy: '#0b2341',
+              cyan: '#0090D0',
+              accent: '#39B54A'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Estilos de impresión para el comprobante / voucher */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-voucher, #printable-voucher * {
+        visibility: visible;
+      }
+      #printable-voucher {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        box-shadow: none;
+        border: 1px solid #ccc;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+
+    /* Animaciones suaves */
+    .fade-in {
+      animation: fadeIn 0.3s ease-in-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- Franja Tricolor Institucional Chilena (Gobierno / Municipal) -->
+  <div class="w-full flex h-1.5 shadow-sm">
+    <div class="w-1/2 bg-[#002B49]"></div>
+    <div class="w-1/2 bg-[#EA2027]"></div>
+  </div>
+
+  <!-- Encabezado Institucional -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-20">
+        <!-- Logo y Entidad -->
+        <div class="flex items-center space-x-3 sm:space-x-4">
+          <div class="w-12 h-12 rounded-xl bg-gob-blue flex items-center justify-center text-white font-bold text-xl shadow-md border-2 border-provi-cyan">
+            <i class="fa-solid fa-building-user text-xl"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs uppercase font-extrabold tracking-wider text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">Municipalidad de Providencia</span>
+              <span class="text-xs text-gray-500 hidden sm:inline">| Espacio Cowork & Emprendimiento</span>
+            </div>
+            <h1 class="text-lg sm:text-2xl font-black text-gob-blue tracking-tight">Hub Providencia <span class="font-light text-gray-500 text-sm sm:text-lg">· Reserva de Salas</span></h1>
+          </div>
+        </div>
+
+        <!-- Acciones Cabecera -->
+        <div class="flex items-center gap-2">
+          <button onclick="switchView('booking')" id="btn-nav-booking" class="px-3 py-2 text-sm font-semibold rounded-lg bg-gob-blue text-white shadow hover:bg-gob-darkBlue transition-all flex items-center gap-2">
+            <i class="fa-regular fa-calendar-check"></i>
+            <span class="hidden sm:inline">Reservar Sala</span>
+          </button>
+          <button onclick="toggleAdminModal()" class="px-3 py-2 text-sm font-semibold rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-lock text-xs text-gray-500"></i>
+            <span class="hidden sm:inline">Recepción / Admin</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Mensaje Notificación Dinámica / Toast -->
+    <div id="toast" class="hidden fixed bottom-6 right-6 max-w-md bg-white border-l-4 rounded-lg shadow-2xl p-4 z-50 fade-in border-gob-blue">
+      <div class="flex items-start">
+        <div id="toast-icon" class="text-gob-blue mr-3 text-xl"></div>
+        <div class="flex-1">
+          <h4 id="toast-title" class="font-bold text-sm text-gray-900">Notificación</h4>
+          <p id="toast-message" class="text-xs text-gray-600 mt-0.5"></p>
+        </div>
+        <button onclick="closeToast()" class="text-gray-400 hover:text-gray-600 ml-3">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= VISTA 1: RESERVA DE SALAS (PÚBLICA) ================= -->
+    <div id="view-booking" class="fade-in space-y-6">
+
+      <!-- Banner Informativo Oficial -->
+      <div class="bg-gradient-to-r from-gob-blue to-gob-accentBlue text-white rounded-2xl p-6 sm:p-8 shadow-lg relative overflow-hidden">
+        <div class="absolute -right-6 -bottom-10 opacity-10 text-9xl">
+          <i class="fa-solid fa-users-rectangle"></i>
+        </div>
+        <div class="relative z-10 max-w-3xl">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-sm text-white mb-3">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Sistema Oficial en Línea
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Portal de Agendamiento de Salas</h2>
+          <p class="mt-2 text-sm sm:text-base text-blue-100 leading-relaxed">
+            Reserva autónoma de espacios de reunión para emprendedores y comunidad de Providencia. Consulta la disponibilidad en tiempo real y asegura tu espacio sin filas en mesón.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-4 text-xs sm:text-sm text-blue-100">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-amber-300"></i> Manuel Montt 101, Providencia</span>
+            <span class="flex items-center gap-1.5"><i class="fa-regular fa-clock text-amber-300"></i> Lunes a Viernes 09:00 - 18:00 hrs</span>
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-amber-300"></i> Máx. 2 horas por día</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Pasos / Wizard Estilo Trámite de Gobierno -->
+      <nav aria-label="Progreso de trámite" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <ol class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-xs font-medium text-center">
+          <li id="step-pill-1" class="flex flex-col sm:flex-row items-center justify-center p-2 rounded-lg bg-blue-50 text-gob-blue border border-blue-200 font-bold">
+            <span class="w-6 h-6 rounded-full bg-gob-blue text-white flex items-center justify-center text-xs mb-1 sm:mb-0 sm:mr-2">1</span>
+            <span>Espacio y Fecha</span>
+          </li>
+          <li id="step-pill-2" class="flex flex-col sm:flex-row items-center justify-center p-2 rounded-lg bg-gray-50 text-gray-500 border border-gray-200">
+            <span class="w-6 h-6 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center text-xs mb-1 sm:mb-0 sm:mr-2">2</span>
+            <span>Horario</span>
+          </li>
+          <li id="step-pill-3" class="flex flex-col sm:flex-row items-center justify-center p-2 rounded-lg bg-gray-50 text-gray-500 border border-gray-200">
+            <span class="w-6 h-6 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center text-xs mb-1 sm:mb-0 sm:mr-2">3</span>
+            <span>Identificación</span>
+          </li>
+          <li id="step-pill-4" class="flex flex-col sm:flex-row items-center justify-center p-2 rounded-lg bg-gray-50 text-gray-500 border border-gray-200">
+            <span class="w-6 h-6 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center text-xs mb-1 sm:mb-0 sm:mr-2">4</span>
+            <span>Comprobante</span>
+          </li>
+        </ol>
+      </nav>
+
+      <!-- PASO 1: Selección de Sala y Fecha -->
+      <section id="step-1" class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full bg-gob-blue text-white flex items-center justify-center text-sm">1</span>
+            Selecciona la Sala y el Día de tu Reunión
+          </h3>
+          <p class="text-sm text-gray-500 ml-9">Elige el espacio adecuado según el aforo requerido y define la fecha.</p>
+        </div>
+
+        <!-- Tarjetas de las Salas (Basadas en el documento Capstone: Sala 1 y Sala 4) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Sala 1 -->
+          <label class="relative flex flex-col p-5 bg-white border-2 border-gray-200 rounded-xl cursor-pointer hover:border-gob-accentBlue transition-all duration-200 shadow-sm has-[:checked]:border-gob-blue has-[:checked]:bg-blue-50/50 has-[:checked]:ring-2 has-[:checked]:ring-gob-blue/20">
+            <input type="radio" name="selected_room" value="sala_1" checked onchange="handleRoomChange()" class="sr-only">
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <span class="inline-block px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 mb-1">Equipos Reducidos</span>
+                <h4 class="text-lg font-black text-gray-900">Sala 1</h4>
+              </div>
+              <span class="w-9 h-9 rounded-full bg-blue-100 text-gob-blue flex items-center justify-center font-bold text-sm">
+                <i class="fa-solid fa-users"></i>
+              </span>
+            </div>
+            <p class="text-xs text-gray-600 mb-4 flex-grow">
+              Ideal para reuniones de equipo técnico, mentorías, sesiones de retroalimentación y entrevistas breves.
+            </p>
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+              <span class="font-medium text-gray-700"><i class="fa-solid fa-user-group text-gob-blue mr-1"></i> Aforo: hasta 5 personas</span>
+              <span class="text-emerald-700 font-semibold"><i class="fa-solid fa-tv mr-1"></i> Pantalla HDMI</span>
+            </div>
+          </label>
+
+          <!-- Sala 4 -->
+          <label class="relative flex flex-col p-5 bg-white border-2 border-gray-200 rounded-xl cursor-pointer hover:border-gob-accentBlue transition-all duration-200 shadow-sm has-[:checked]:border-gob-blue has-[:checked]:bg-blue-50/50 has-[:checked]:ring-2 has-[:checked]:ring-gob-blue/20">
+            <input type="radio" name="selected_room" value="sala_4" onchange="handleRoomChange()" class="sr-only">
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <span class="inline-block px-2.5 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200 mb-1">Capacidad Ampliada</span>
+                <h4 class="text-lg font-black text-gray-900">Sala 4</h4>
+              </div>
+              <span class="w-9 h-9 rounded-full bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold text-sm">
+                <i class="fa-solid fa-chalkboard-user"></i>
+              </span>
+            </div>
+            <p class="text-xs text-gray-600 mb-4 flex-grow">
+              Diseñada para presentaciones a clientes, talleres participativos, sesiones de directorio o pitch de emprendimientos.
+            </p>
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+              <span class="font-medium text-gray-700"><i class="fa-solid fa-user-group text-gob-blue mr-1"></i> Aforo: hasta 15 personas</span>
+              <span class="text-indigo-700 font-semibold"><i class="fa-solid fa-video mr-1"></i> Audio & Proyector</span>
+            </div>
+          </label>
+        </div>
+
+        <!-- Selector de Fecha -->
+        <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="w-full sm:w-auto">
+            <label for="reservation-date" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+              Fecha de Reserva (Lunes a Viernes)
+            </label>
+            <input type="date" id="reservation-date" onchange="handleDateChange()" class="w-full sm:w-64 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-gob-blue focus:border-gob-blue">
+          </div>
+          <div class="w-full sm:w-auto flex items-center justify-end">
+            <button onclick="goToStep(2)" class="w-full sm:w-auto px-6 py-2.5 bg-gob-blue hover:bg-gob-darkBlue text-white font-semibold text-sm rounded-lg shadow transition-all flex items-center justify-center gap-2">
+              <span>Continuar a Horarios</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- PASO 2: Grilla Horaria Semáforo -->
+      <section id="step-2" class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-100 gap-2">
+          <div>
+            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <span class="w-7 h-7 rounded-full bg-gob-blue text-white flex items-center justify-center text-sm">2</span>
+              Disponibilidad de Horarios en Tiempo Real
+            </h3>
+            <p id="label-selected-room-date" class="text-sm text-gray-500 ml-9">Consultando disponibilidad...</p>
+          </div>
+          <!-- Leyenda Semáforo -->
+          <div class="flex items-center gap-3 text-xs bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> Disponible</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-rose-500"></span> Ocupado</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-600 ring-2 ring-blue-300"></span> Seleccionado</span>
+          </div>
+        </div>
+
+        <!-- Contenedor de Bloques Horarios Dinámicos -->
+        <div id="slots-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <!-- Generado vía JS -->
+        </div>
+
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs flex items-start gap-2">
+          <i class="fa-solid fa-circle-exclamation mt-0.5 text-amber-600"></i>
+          <span><strong>Regla de reserva:</strong> Se permite reservar 1 bloque continuo por solicitud para garantizar la rotación equitativa en el cowork. Recuerda llegar 5 minutos antes.</span>
+        </div>
+
+        <!-- Botones de Navegación Paso 2 -->
+        <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+          <button onclick="goToStep(1)" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all flex items-center gap-2">
+            <i class="fa-solid fa-arrow-left text-xs"></i>
+            <span>Volver a Sala y Fecha</span>
+          </button>
+          <button id="btn-to-step-3" onclick="validateStep2AndContinue()" disabled class="px-6 py-2.5 bg-gray-300 text-gray-500 cursor-not-allowed font-semibold text-sm rounded-lg transition-all flex items-center gap-2">
+            <span>Continuar a Identificación</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+        </div>
+      </section>
+
+      <!-- PASO 3: Formulario de Identificación (RUT y Datos) -->
+      <section id="step-3" class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6 hidden">
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full bg-gob-blue text-white flex items-center justify-center text-sm">3</span>
+            Datos del Solicitante Responsable
+          </h3>
+          <p class="text-sm text-gray-500 ml-9">Ingresa tus datos fidedignos para la validación y emisión del comprobante.</p>
+        </div>
+
+        <!-- Resumen de Bloque Preseleccionado -->
+        <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between text-xs sm:text-sm text-gob-blue gap-2">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-calendar-day text-gob-blue text-base"></i>
+            <span><strong>Reserva:</strong> <span id="summary-room">Sala 1</span> — <span id="summary-date">2026-10-28</span></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <i class="fa-regular fa-clock text-gob-blue text-base"></i>
+            <span><strong>Bloque:</strong> <span id="summary-slot" class="font-bold underline">10:00 - 11:00 hrs</span></span>
+          </div>
+        </div>
+
+        <form id="reservation-form" onsubmit="handleReservationSubmit(event)" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            <!-- RUT Chileno -->
+            <div>
+              <label for="user-rut" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                RUT Solicitante <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <input type="text" id="user-rut" required placeholder="12.345.678-K" oninput="formatAndValidateRUT(this)" class="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-gob-blue focus:border-gob-blue uppercase">
+                <div id="rut-status" class="absolute right-3 top-2.5 text-xs font-bold"></div>
+              </div>
+              <p id="rut-error-msg" class="text-xs text-red-600 mt-1 hidden">RUT inválido. Verifica formato y dígito verificador.</p>
+            </div>
+
+            <!-- Nombre Completo -->
+            <div>
+              <label for="user-name" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                Nombre y Apellido <span class="text-red-500">*</span>
+              </label>
+              <input type="text" id="user-name" required placeholder="Ej: Marcela Paz González" class="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-gob-blue focus:border-gob-blue">
+            </div>
+
+            <!-- Correo Electrónico -->
+            <div>
+              <label for="user-email" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                Correo Electrónico <span class="text-red-500">*</span>
+              </label>
+              <input type="email" id="user-email" required placeholder="nombre@correo.cl" class="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-gob-blue focus:border-gob-blue">
+            </div>
+
+            <!-- Teléfono Celular -->
+            <div>
+              <label for="user-phone" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                Teléfono de Contacto <span class="text-red-500">*</span>
+              </label>
+              <input type="tel" id="user-phone" required placeholder="+56 9 8765 4321" class="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-gob-blue focus:border-gob-blue">
+            </div>
+          </div>
+
+          <!-- Motivo de la Reserva / Emprendimiento -->
+          <div>
+            <label for="user-motive" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+              Motivo de Uso / Nombre de Proyecto o Emprendimiento <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="user-motive" required placeholder="Ej: Reunión de coordinación de startup / Preparación de pitch" class="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-gob-blue focus:border-gob-blue">
+          </div>
+
+          <!-- Declaración Jurada Simple -->
+          <div class="pt-2">
+            <label class="flex items-start gap-2.5 cursor-pointer">
+              <input type="checkbox" id="user-terms" required class="mt-1 w-4 h-4 text-gob-blue border-gray-300 rounded focus:ring-gob-blue">
+              <span class="text-xs text-gray-600 leading-normal">
+                Declaro conocer el reglamento de uso de Hub Providencia. Me comprometo a cuidar las instalaciones y presentarme puntualmente. Entiendo que tras 10 minutos de retraso la sala podrá ser reasignada.
+              </span>
+            </label>
+          </div>
+
+          <!-- Botones de Acción Formulario -->
+          <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+            <button type="button" onclick="goToStep(2)" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all flex items-center gap-2">
+              <i class="fa-solid fa-arrow-left text-xs"></i>
+              <span>Modificar Horario</span>
+            </button>
+            <button type="submit" id="btn-submit-booking" class="px-7 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg shadow-md transition-all flex items-center gap-2">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Confirmar y Emitir Reserva</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- PASO 4: Voucher / Comprobante Digital Oficial -->
+      <section id="step-4" class="space-y-6 hidden">
+        <!-- Tarjeta Comprobante Imprimible -->
+        <div id="printable-voucher" class="max-w-2xl mx-auto bg-white rounded-2xl border-2 border-gob-blue shadow-xl overflow-hidden p-6 sm:p-8 relative">
+          
+          <!-- Encabezado Comprobante -->
+          <div class="flex items-center justify-between border-b pb-4 mb-5 border-gray-200">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-gob-blue text-white rounded-xl flex items-center justify-center font-bold text-lg">
+                HUB
+              </div>
+              <div>
+                <p class="text-xs font-extrabold uppercase tracking-widest text-red-600">Municipalidad de Providencia</p>
+                <h2 class="text-xl font-black text-gob-blue">Comprobante de Reserva de Sala</h2>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] uppercase font-bold text-gray-400 block">Código Único</span>
+              <span id="voucher-code" class="text-base font-mono font-black text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-300">HUB-2026-0000</span>
+            </div>
+          </div>
+
+          <!-- Estado de Confirmación -->
+          <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-6 flex items-center gap-3 text-emerald-800">
+            <i class="fa-solid fa-circle-check text-2xl text-emerald-600"></i>
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider">Reserva Confirmada Exitosamente</p>
+              <p class="text-xs text-emerald-700">Presenta este comprobante físico o digital en el mesón de entrada de Hub Providencia.</p>
+            </div>
+          </div>
+
+          <!-- Detalles de la Reserva en 2 Columnas -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <div>
+              <span class="text-gray-500 uppercase font-semibold text-[10px] block">Espacio Reservado</span>
+              <p id="voucher-room" class="font-bold text-gray-900 text-sm mt-0.5">Sala 1 (Capacidad 5 pers.)</p>
+            </div>
+            <div>
+              <span class="text-gray-500 uppercase font-semibold text-[10px] block">Fecha y Bloque Horario</span>
+              <p id="voucher-datetime" class="font-bold text-gray-900 text-sm mt-0.5">28/10/2026 · 10:00 - 11:00 hrs</p>
+            </div>
+            <div>
+              <span class="text-gray-500 uppercase font-semibold text-[10px] block">Nombre Solicitante</span>
+              <p id="voucher-name" class="font-medium text-gray-800 mt-0.5">Juan Pérez</p>
+            </div>
+            <div>
+              <span class="text-gray-500 uppercase font-semibold text-[10px] block">RUT Registrado</span>
+              <p id="voucher-rut" class="font-medium text-gray-800 mt-0.5">12.345.678-9</p>
+            </div>
+            <div class="sm:col-span-2">
+              <span class="text-gray-500 uppercase font-semibold text-[10px] block">Motivo / Emprendimiento</span>
+              <p id="voucher-motive" class="font-medium text-gray-800 mt-0.5">Reunión de coordinación</p>
+            </div>
+          </div>
+
+          <!-- QR Code Simulado y Políticas -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-6 pt-4 border-t border-gray-200">
+            <div class="flex items-center gap-4">
+              <!-- SVG QR Generado Limpio -->
+              <div class="w-24 h-24 p-1.5 bg-white border border-gray-300 rounded-lg shadow-sm flex items-center justify-center">
+                <svg id="voucher-qr" class="w-full h-full text-gob-blue" viewBox="0 0 100 100" fill="currentColor">
+                  <!-- QR SVG representativo con esquinas y patrón -->
+                  <rect x="5" y="5" width="25" height="25" rx="3" fill="#002B49" />
+                  <rect x="9" y="9" width="17" height="17" fill="#ffffff" />
+                  <rect x="13" y="13" width="9" height="9" fill="#002B49" />
+
+                  <rect x="70" y="5" width="25" height="25" rx="3" fill="#002B49" />
+                  <rect x="74" y="9" width="17" height="17" fill="#ffffff" />
+                  <rect x="78" y="13" width="9" height="9" fill="#002B49" />
+
+                  <rect x="5" y="70" width="25" height="25" rx="3" fill="#002B49" />
+                  <rect x="9" y="74" width="17" height="17" fill="#ffffff" />
+                  <rect x="13" y="78" width="9" height="9" fill="#002B49" />
+
+                  <rect x="36" y="10" width="8" height="8" />
+                  <rect x="48" y="10" width="8" height="8" />
+                  <rect x="36" y="22" width="16" height="6" />
+                  <rect x="10" y="38" width="12" height="12" />
+                  <rect x="26" y="38" width="8" height="20" />
+                  <rect x="40" y="38" width="18" height="18" />
+                  <rect x="66" y="38" width="24" height="8" />
+                  <rect x="66" y="52" width="10" height="18" />
+                  <rect x="80" y="52" width="10" height="10" />
+                  <rect x="38" y="66" width="20" height="10" />
+                  <rect x="38" y="80" width="10" height="14" />
+                  <rect x="52" y="80" width="16" height="14" />
+                  <rect x="72" y="76" width="18" height="18" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-gray-800">Check-in Electrónico</p>
+                <p class="text-[11px] text-gray-500 leading-tight mt-0.5">Escanea este código o dicta tu RUT al llegar a la recepción de Manuel Montt 101.</p>
+                <p class="text-[10px] text-red-600 font-semibold mt-1.5"><i class="fa-regular fa-clock"></i> Tolerancia máxima: 10 minutos.</p>
+              </div>
+            </div>
+            <div class="text-center sm:text-right text-[10px] text-gray-400">
+              <p>Emitido: <span id="voucher-issued">2026-10-28 19:00</span></p>
+              <p>Hub Providencia Cowork</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de Acción Comprobante -->
+        <div class="max-w-2xl mx-auto flex flex-col sm:flex-row gap-3 no-print">
+          <button onclick="window.print()" class="flex-1 py-3 px-4 bg-gob-blue hover:bg-gob-darkBlue text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-print"></i>
+            <span>Imprimir o Guardar PDF</span>
+          </button>
+          <button onclick="resetToStep1()" class="py-3 px-6 bg-white hover:bg-gray-100 text-gray-700 font-semibold rounded-xl border border-gray-300 shadow-sm transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>Hacer Otra Reserva</span>
+          </button>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ================= VISTA 2: PANEL DE ADMINISTRACIÓN / RECEPCIÓN ================= -->
+    <div id="view-admin" class="fade-in space-y-6 hidden">
+      <!-- Barra Superior Admin -->
+      <div class="bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+              <i class="fa-solid fa-lock-open text-xs mr-1"></i> Modo Recepcionista Activo
+            </span>
+            <span class="text-xs text-gray-500">Hub Providencia · Manuel Montt 101</span>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-black text-gob-blue mt-1">Panel de Control de Salas</h2>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <!-- Filtro de fecha en admin -->
+          <div class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 text-xs">
+            <span class="font-bold text-gray-600">Día:</span>
+            <input type="date" id="admin-filter-date" onchange="renderAdminReservations()" class="bg-white border border-gray-300 rounded px-2 py-1 text-xs">
+          </div>
+          <button onclick="openManualBookingModal()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow">
+            <i class="fa-solid fa-plus"></i>
+            <span>Reserva Mesón</span>
+          </button>
+          <button onclick="exitAdminView()" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold border border-gray-300 flex items-center gap-1">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <span>Cerrar Sesión</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Métricas Resumen Rápido -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <span class="text-xs text-gray-500 font-semibold block uppercase">Reservas del Día</span>
+          <p id="stat-total" class="text-2xl font-black text-gob-blue mt-1">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <span class="text-xs text-emerald-600 font-semibold block uppercase">Check-in Realizados</span>
+          <p id="stat-checked" class="text-2xl font-black text-emerald-600 mt-1">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <span class="text-xs text-amber-600 font-semibold block uppercase">En Espera (Mesón)</span>
+          <p id="stat-pending" class="text-2xl font-black text-amber-600 mt-1">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <span class="text-xs text-rose-600 font-semibold block uppercase">Liberadas / Canceladas</span>
+          <p id="stat-cancelled" class="text-2xl font-black text-rose-600 mt-1">0</p>
+        </div>
+      </div>
+
+      <!-- Tabla de Gestión de Horas del Día -->
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="p-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-gob-blue"></i>
+            <h3 class="font-bold text-sm text-gray-800">Listado de Agendamientos para el Día</h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="renderAdminReservations()" class="text-xs text-gob-accentBlue hover:underline flex items-center gap-1 font-semibold">
+              <i class="fa-solid fa-rotate-right"></i> Refrescar Grilla
+            </button>
+            <button onclick="clearDemoData()" class="text-xs text-red-500 hover:underline ml-2">Reiniciar Datos Demo</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-gray-100 text-gray-600 uppercase font-semibold text-[11px] border-b">
+              <tr>
+                <th class="py-3 px-4">Código</th>
+                <th class="py-3 px-4">Espacio</th>
+                <th class="py-3 px-4">Horario</th>
+                <th class="py-3 px-4">Solicitante / Contacto</th>
+                <th class="py-3 px-4">Motivo / Proyecto</th>
+                <th class="py-3 px-4 text-center">Estado</th>
+                <th class="py-3 px-4 text-right">Acción Operativa (Mesón)</th>
+              </tr>
+            </thead>
+            <tbody id="admin-reservations-tbody" class="divide-y divide-gray-200">
+              <!-- Se puebla dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pauta Operativa Capstone (Protocolo de los 10 minutos) -->
+      <div class="bg-blue-50 border-l-4 border-gob-blue p-4 rounded-xl text-xs text-gob-blue flex items-start gap-3">
+        <i class="fa-solid fa-circle-info text-lg mt-0.5"></i>
+        <div>
+          <h4 class="font-bold text-sm">Protocolo Operativo de Mesón (Informe Capstone Hub Providencia):</h4>
+          <p class="mt-1 leading-relaxed">
+            1. <strong>Recepción:</strong> Al presentarse el usuario, verificar RUT o Código y presionar "Marcar Check-in".<br>
+            2. <strong>Regla de los 10 minutos de inasistencia:</strong> Si el titular no llega dentro de los primeros 10 minutos del bloque, el recepcionista puede pulsar "Liberar por No Asistencia" para dejar la sala disponible a personas en lista de espera presencial.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ================= MODALES AUXILIARES ================= -->
+
+  <!-- Modal 1: Login de Administrador -->
+  <div id="modal-admin-login" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-200">
+      <div class="text-center mb-5">
+        <div class="w-12 h-12 bg-gob-blue text-white rounded-xl mx-auto flex items-center justify-center mb-2">
+          <i class="fa-solid fa-id-card-clip text-xl"></i>
+        </div>
+        <h3 class="text-lg font-black text-gob-blue">Acceso Recepción Hub</h3>
+        <p class="text-xs text-gray-500">Módulo exclusivo para funcionarios y recepcionistas.</p>
+      </div>
+      <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Clave de Acceso</label>
+          <input type="password" id="admin-password" required placeholder="Clave de demo: adminhub123" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gob-blue focus:outline-none">
+          <span class="text-[10px] text-gray-400 mt-1 block">Clave de prueba: <strong class="text-gob-blue">adminhub123</strong></span>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onclick="toggleAdminModal()" class="px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
+          <button type="submit" class="px-4 py-2 bg-gob-blue hover:bg-gob-darkBlue text-white text-xs font-bold rounded-lg shadow">Ingresar al Panel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Reserva Manual en Mesón (Para recepcionistas) -->
+  <div id="modal-manual-booking" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-200">
+      <div class="flex justify-between items-center pb-3 border-b border-gray-200 mb-4">
+        <h3 class="text-base font-black text-gob-blue flex items-center gap-2">
+          <i class="fa-solid fa-headset text-emerald-600"></i>
+          Reserva Presencial en Mesón
+        </h3>
+        <button onclick="closeManualBookingModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form onsubmit="handleManualBookingSubmit(event)" class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Sala</label>
+            <select id="manual-room" class="w-full p-2 border rounded-lg bg-white">
+              <option value="sala_1">Sala 1 (5 pers.)</option>
+              <option value="sala_4">Sala 4 (15 pers.)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Fecha</label>
+            <input type="date" id="manual-date" required class="w-full p-2 border rounded-lg">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Bloque Horario</label>
+          <select id="manual-slot" class="w-full p-2 border rounded-lg bg-white font-mono">
+            <!-- Rellenado dinámicamente -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">RUT Solicitante</label>
+          <input type="text" id="manual-rut" placeholder="12345678-5" required class="w-full p-2 border rounded-lg uppercase">
+        </div>
+
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Nombre Completo</label>
+          <input type="text" id="manual-name" placeholder="Usuario presente en mesón" required class="w-full p-2 border rounded-lg">
+        </div>
+
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Motivo / Proyecto</label>
+          <input type="text" id="manual-motive" placeholder="Reunión espontánea" required class="w-full p-2 border rounded-lg">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button type="button" onclick="closeManualBookingModal()" class="px-3 py-1.5 text-gray-600 font-semibold hover:bg-gray-100 rounded-lg">Cancelar</button>
+          <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow">Registrar y Dar Check-in</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Pie de Página Institucional -->
+  <footer class="bg-gob-blue text-white text-xs mt-12 border-t-4 border-provi-cyan no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-6 h-6 rounded bg-white text-gob-blue font-black flex items-center justify-center text-xs">HP</span>
+            <span class="font-extrabold text-sm tracking-wide">Hub Providencia</span>
+          </div>
+          <p class="text-gray-300 leading-relaxed text-[11px]">
+            Dirección de Desarrollo Local (DIDECO) de la Ilustre Municipalidad de Providencia. Espacios de trabajo colaborativo, incubación y apoyo integral al ecosistema emprendedor.
+          </p>
+        </div>
+        <div>
+          <h4 class="font-bold text-sm uppercase text-gray-200 tracking-wider mb-2">Ubicación y Horarios</h4>
+          <p class="text-gray-300 text-[11px] leading-relaxed">
+            <i class="fa-solid fa-map-pin mr-1.5 text-red-400"></i> Manuel Montt 101, Providencia, Región Metropolitana.<br>
+            <i class="fa-solid fa-subway mr-1.5 text-red-400"></i> Metro Manuel Montt (Línea 1)<br>
+            <i class="fa-solid fa-clock mr-1.5 text-red-400"></i> Lunes a Viernes: 09:00 a 18:00 hrs.
+          </p>
+        </div>
+        <div>
+          <h4 class="font-bold text-sm uppercase text-gray-200 tracking-wider mb-2">Proyecto Capstone</h4>
+          <p class="text-gray-300 text-[11px] leading-relaxed">
+            Desarrollado para optimizar la disponibilidad y evitar conflictos de reservas. Integrantes: Angel Laguna, Benjamín Silva, Krishna Gutierrez, Pedro Ruiz, Cristian Liempi y René Contreras.
+          </p>
+          <div class="mt-3 flex items-center gap-3 text-sm text-gray-400">
+            <a href="#" class="hover:text-white"><i class="fa-brands fa-github text-base"></i></a>
+            <span>Versión 1.0 (Noviembre 2026)</span>
+          </div>
+        </div>
+      </div>
+      <div class="mt-6 pt-4 border-t border-gray-700/60 text-center text-[10px] text-gray-400">
+        © 2026 Municipalidad de Providencia · Todos los derechos reservados · Plataforma Web de Autoservicio Comunitario
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================= LÓGICA JAVASCRIPT COMPLETA ================= -->
+  <script>
+    /*
+     * Sistema de Agendamiento Hub Providencia
+     * Basado en el informe Capstone:
+     * - Salas: Sala 1 (5 personas), Sala 4 (15 personas)
+     * - Horarios: 09:00 a 18:00 hrs
+     * - Validación de RUT con Módulo 11 chileno
+     * - Protocolo de 10 min de inasistencia en mesón
+     * - Persistencia con localStorage para ejecución en GitHub Pages
+     */
+
+    // Constantes de salas y bloques horarios
+    const ROOMS = {
+      'sala_1': { name: 'Sala 1', capacity: 5, description: 'Reuniones de equipos reducidos y mentorías' },
+      'sala_4': { name: 'Sala 4', capacity: 15, description: 'Capacidad ampliada para presentaciones o pitch' }
+    };
+
+    // Bloques fijos de 1 hora de 09:00 a 18:00
+    const TIME_SLOTS = [
+      '09:00 - 10:00',
+      '10:00 - 11:00',
+      '11:00 - 12:00',
+      '12:00 - 13:00',
+      '14:00 - 15:00',
+      '15:00 - 16:00',
+      '16:00 - 17:00',
+      '17:00 - 18:00'
+    ];
+
+    // Estado de la aplicación
+    let currentStep = 1;
+    let selectedRoom = 'sala_1';
+    let selectedDate = '';
+    let selectedSlot = null;
+    let isAdminLoggedIn = false;
+
+    // Inicialización al cargar la ventana
+    window.addEventListener('DOMContentLoaded', () => {
+      initStorage();
+      setupDateInput();
+      populateManualSlots();
+    });
+
+    // 1. Inicialización de Almacenamiento Local (LocalStorage)
+    function initStorage() {
+      if (!localStorage.getItem('hub_reservations')) {
+        // Sembrar con datos simulados de demostración
+        const todayStr = getChileTodayString();
+        const demoReservations = [
+          {
+            id: 'HUB-2026-1042',
+            room: 'sala_1',
+            date: todayStr,
+            slot: '09:00 - 10:00',
+            rut: '16.782.341-2',
+            name: 'Valeria Morales',
+            email: 'valeria@startup.cl',
+            phone: '+56 9 8451 2290',
+            motive: 'Reunión de socios fundadores',
+            status: 'CHECKED_IN', // Check-in ya efectuado
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: 'HUB-2026-1088',
+            room: 'sala_4',
+            date: todayStr,
+            slot: '11:00 - 12:00',
+            rut: '18.904.552-K',
+            name: 'Carlos Henríquez',
+            email: 'carlos.h@emprende.org',
+            phone: '+56 9 7612 9011',
+            motive: 'Taller de marketing digital',
+            status: 'CONFIRMED', // En espera en mesón
+            createdAt: new Date().toISOString()
+          }
+        ];
+        localStorage.setItem('hub_reservations', JSON.stringify(demoReservations));
+      }
+    }
+
+    // Retorna la fecha actual en formato YYYY-MM-DD
+    function getChileTodayString() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // Configurar los selectores de fecha para evitar días pasados o fines de semana
+    function setupDateInput() {
+      const dateInput = document.getElementById('reservation-date');
+      const adminFilterDate = document.getElementById('admin-filter-date');
+      const manualDate = document.getElementById('manual-date');
+      const todayStr = getChileTodayString();
+
+      dateInput.value = todayStr;
+      dateInput.min = todayStr;
+      selectedDate = todayStr;
+
+      if (adminFilterDate) adminFilterDate.value = todayStr;
+      if (manualDate) {
+        manualDate.value = todayStr;
+        manualDate.min = todayStr;
+      }
+    }
+
+    function populateManualSlots() {
+      const select = document.getElementById('manual-slot');
+      select.innerHTML = '';
+      TIME_SLOTS.forEach(slot => {
+        const opt = document.createElement('option');
+        opt.value = slot;
+        opt.textContent = slot;
+        select.appendChild(opt);
+      });
+    }
+
+    // 2. Control de Pasos (Wizard)
+    function goToStep(stepNumber) {
+      currentStep = stepNumber;
+
+      // Ocultar todas las secciones
+      document.getElementById('step-1').classList.add('hidden');
+      document.getElementById('step-2').classList.add('hidden');
+      document.getElementById('step-3').classList.add('hidden');
+      document.getElementById('step-4').classList.add('hidden');
+
+      // Actualizar estilo de pills
+      for (let i = 1; i <= 4; i++) {
+        const pill = document.getElementById(`step-pill-${i}`);
+        if (!pill) continue;
+        if (i === stepNumber) {
+          pill.className = "flex flex-col sm:flex-row items-center justify-center p-2 rounded-lg bg-blue-50 text-gob-blue border border-blue-200 font-bold";
+          pill.querySelector('span:first-child').className = "w-6 h-6 rounded-full bg-gob-blue text-white flex items-center justify-center text-xs mb-1 sm:mb-0 sm:mr-2";
+        } else if (i < stepNumber) {
+          pill.className = "flex flex-col sm:flex-row items-center justify-center p-2 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold";
+          pill.querySelector('span:first-child').className = "w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs mb-1 sm:mb-0 sm:mr-2";
+        } else {
+          pill.className = "flex flex-col sm:flex-row items-center justify-center p-2 rounded-lg bg-gray-50 text-gray-500 border border-gray-200";
+          pill.querySelector('span:first-child').className = "w-6 h-6 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center text-xs mb-1 sm:mb-0 sm:mr-2";
+        }
+      }
+
+      // Mostrar sección solicitada
+      const targetSection = document.getElementById(`step-${stepNumber}`);
+      targetSection.classList.remove('hidden');
+      targetSection.classList.add('fade-in');
+
+      // Acciones específicas por paso
+      if (stepNumber === 2) {
+        renderSlotsGrid();
+      } else if (stepNumber === 3) {
+        document.getElementById('summary-room').textContent = ROOMS[selectedRoom].name + ` (Aforo: ${ROOMS[selectedRoom].capacity} pers.)`;
+        document.getElementById('summary-date').textContent = selectedDate;
+        document.getElementById('summary-slot').textContent = selectedSlot;
+      }
+
+      window.scrollTo({ top: 180, behavior: 'smooth' });
+    }
+
+    function handleRoomChange() {
+      const checkedRoom = document.querySelector('input[name="selected_room"]:checked');
+      if (checkedRoom) {
+        selectedRoom = checkedRoom.value;
+      }
+    }
+
+    function handleDateChange() {
+      const dateInput = document.getElementById('reservation-date');
+      const val = dateInput.value;
+      if (!val) return;
+
+      const dateObj = new Date(val + 'T00:00:00');
+      const dayOfWeek = dateObj.getDay(); // 0: Domingo, 6: Sábado
+
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        showToast('warning', 'Fin de Semana No Habilitado', 'Hub Providencia funciona de Lunes a Viernes de 09:00 a 18:00 hrs.');
+        setupDateInput();
+        return;
+      }
+
+      selectedDate = val;
+    }
+
+    // 3. Generación Dinámica de Grilla de Semáforo (Paso 2)
+    function renderSlotsGrid() {
+      const container = document.getElementById('slots-grid');
+      const labelHeader = document.getElementById('label-selected-room-date');
+      labelHeader.innerHTML = `Mostrando horarios para <strong>${ROOMS[selectedRoom].name}</strong> el día <strong>${selectedDate}</strong>`;
+
+      container.innerHTML = '';
+      selectedSlot = null;
+      updateStep2ButtonState();
+
+      // Consultar reservas existentes en LocalStorage
+      const allReservations = getStoredReservations();
+      const bookedSlots = allReservations
+        .filter(r => r.room === selectedRoom && r.date === selectedDate && r.status !== 'CANCELLED')
+        .map(r => r.slot);
+
+      TIME_SLOTS.forEach(slot => {
+        const isOccupied = bookedSlots.includes(slot);
+
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `p-4 rounded-xl border text-left transition-all duration-150 flex flex-col justify-between h-28 relative ${
+          isOccupied
+            ? 'bg-rose-50/60 border-rose-200 text-rose-800 cursor-not-allowed opacity-90'
+            : 'bg-white border-gray-200 hover:border-gob-blue hover:shadow-md cursor-pointer'
+        }`;
+
+        if (isOccupied) {
+          card.disabled = true;
+          card.innerHTML = `
+            <div class="flex justify-between items-start">
+              <span class="font-mono font-bold text-sm text-gray-700">${slot}</span>
+              <span class="w-3 h-3 rounded-full bg-rose-500 ring-2 ring-rose-200"></span>
+            </div>
+            <div class="mt-2">
+              <span class="inline-block px-2 py-0.5 text-[10px] font-bold bg-rose-100 text-rose-700 rounded uppercase">Ocupado</span>
+              <p class="text-[10px] text-gray-500 mt-1">No disponible</p>
+            </div>
+          `;
+        } else {
+          card.onclick = () => selectSlot(slot, card);
+          card.innerHTML = `
+            <div class="flex justify-between items-start">
+              <span class="font-mono font-bold text-sm text-gray-800">${slot}</span>
+              <span class="w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-emerald-200"></span>
+            </div>
+            <div class="mt-2">
+              <span class="inline-block px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded uppercase">Disponible</span>
+              <p class="text-[10px] text-gray-500 mt-1">Haz clic para elegir</p>
+            </div>
+          `;
+        }
+
+        container.appendChild(card);
+      });
+    }
+
+    function selectSlot(slot, cardElement) {
+      selectedSlot = slot;
+
+      // Desmarcar los demás
+      const allCards = document.getElementById('slots-grid').children;
+      for (let btn of allCards) {
+        if (!btn.disabled) {
+          btn.classList.remove('ring-2', 'ring-gob-blue', 'bg-blue-50', 'border-gob-blue');
+          btn.classList.add('bg-white', 'border-gray-200');
+        }
+      }
+
+      // Marcar seleccionado
+      cardElement.classList.add('ring-2', 'ring-gob-blue', 'bg-blue-50', 'border-gob-blue');
+      cardElement.classList.remove('bg-white', 'border-gray-200');
+
+      updateStep2ButtonState();
+    }
+
+    function updateStep2ButtonState() {
+      const btn = document.getElementById('btn-to-step-3');
+      if (selectedSlot) {
+        btn.disabled = false;
+        btn.className = "px-6 py-2.5 bg-gob-blue hover:bg-gob-darkBlue text-white font-semibold text-sm rounded-lg shadow transition-all flex items-center gap-2 cursor-pointer";
+      } else {
+        btn.disabled = true;
+        btn.className = "px-6 py-2.5 bg-gray-300 text-gray-500 cursor-not-allowed font-semibold text-sm rounded-lg transition-all flex items-center gap-2";
+      }
+    }
+
+    function validateStep2AndContinue() {
+      if (!selectedSlot) {
+        showToast('warning', 'Selecciona un Horario', 'Debes elegir un bloque disponible en verde para continuar.');
+        return;
+      }
+      goToStep(3);
+    }
+
+    // 4. Validación de RUT Chileno (Algoritmo Oficial Módulo 11)
+    function checkChileanRUT(rutCompleto) {
+      let rutLimpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
+      if (rutLimpio.length < 8) return false;
+
+      let cuerpo = rutLimpio.slice(0, -1);
+      let dv = rutLimpio.slice(-1);
+
+      let suma = 0;
+      let multiplo = 2;
+
+      for (let i = 1; i <= cuerpo.length; i++) {
+        let index = multiplo * rutLimpio.charAt(cuerpo.length - i);
+        suma = suma + index;
+        if (multiplo < 7) {
+          multiplo = multiplo + 1;
+        } else {
+          multiplo = 2;
+        }
+      }
+
+      let dvEsperado = 11 - (suma % 11);
+      let dvCalculado = (dvEsperado === 11) ? "0" : (dvEsperado === 10) ? "K" : dvEsperado.toString();
+
+      return dvCalculado === dv;
+    }
+
+    function formatAndValidateRUT(input) {
+      let val = input.value.replace(/[^0-9kK]/g, '').toUpperCase();
+      if (val.length > 9) val = val.slice(0, 9);
+
+      if (val.length > 1) {
+        let cuerpo = val.slice(0, -1);
+        let dv = val.slice(-1);
+        // Formatear con puntos
+        let cuerpoFormateado = '';
+        while (cuerpo.length > 3) {
+          cuerpoFormateado = '.' + cuerpo.slice(-3) + cuerpoFormateado;
+          cuerpo.slice(0, -3);
+          cuerpo = cuerpo.substring(0, cuerpo.length - 3);
+        }
+        cuerpoFormateado = cuerpo + cuerpoFormateado;
+        input.value = `${cuerpoFormateado}-${dv}`;
+      } else {
+        input.value = val;
+      }
+
+      const statusEl = document.getElementById('rut-status');
+      const errorMsg = document.getElementById('rut-error-msg');
+
+      if (val.length >= 8) {
+        const isValid = checkChileanRUT(input.value);
+        if (isValid) {
+          statusEl.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-600"></i>';
+          errorMsg.classList.add('hidden');
+          input.classList.remove('border-red-400');
+          input.classList.add('border-emerald-500');
+        } else {
+          statusEl.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-500"></i>';
+          errorMsg.classList.remove('hidden');
+          input.classList.remove('border-emerald-500');
+          input.classList.add('border-red-400');
+        }
+      } else {
+        statusEl.innerHTML = '';
+        errorMsg.classList.add('hidden');
+        input.classList.remove('border-red-400', 'border-emerald-500');
+      }
+    }
+
+    // 5. Envío y Registro de la Reserva (Autoservicio)
+    function handleReservationSubmit(e) {
+      e.preventDefault();
+
+      const rutInput = document.getElementById('user-rut');
+      if (!checkChileanRUT(rutInput.value)) {
+        showToast('error', 'RUT Inválido', 'Por favor ingresa un RUT chileno válido para continuar.');
+        rutInput.focus();
+        return;
+      }
+
+      // Validar si el horario no fue reservado en paralelo (Control de concurrencia simulada)
+      const reservations = getStoredReservations();
+      const conflict = reservations.some(r =>
+        r.room === selectedRoom &&
+        r.date === selectedDate &&
+        r.slot === selectedSlot &&
+        r.status !== 'CANCELLED'
+      );
+
+      if (conflict) {
+        showToast('error', 'Horario No Disponible', 'El bloque seleccionado acaba de ser ocupado. Por favor selecciona otro.');
+        goToStep(2);
+        return;
+      }
+
+      // Generar ID único amigable HUB-2026-XXXX
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const bookingId = `HUB-2026-${randomSuffix}`;
+
+      const newReservation = {
+        id: bookingId,
+        room: selectedRoom,
+        date: selectedDate,
+        slot: selectedSlot,
+        rut: rutInput.value.trim(),
+        name: document.getElementById('user-name').value.trim(),
+        email: document.getElementById('user-email').value.trim(),
+        phone: document.getElementById('user-phone').value.trim(),
+        motive: document.getElementById('user-motive').value.trim(),
+        status: 'CONFIRMED', // Confirmada, en espera de check-in en mesón
+        createdAt: new Date().toISOString()
+      };
+
+      reservations.push(newReservation);
+      saveReservations(reservations);
+
+      // Desplegar datos en el comprobante del Paso 4
+      document.getElementById('voucher-code').textContent = newReservation.id;
+      document.getElementById('voucher-room').textContent = `${ROOMS[selectedRoom].name} (Capacidad: ${ROOMS[selectedRoom].capacity} personas)`;
+      document.getElementById('voucher-datetime').textContent = `${formatDateToDisplay(selectedDate)} · ${selectedSlot} hrs`;
+      document.getElementById('voucher-name').textContent = newReservation.name;
+      document.getElementById('voucher-rut').textContent = newReservation.rut;
+      document.getElementById('voucher-motive').textContent = newReservation.motive;
+      document.getElementById('voucher-issued').textContent = new Date().toLocaleString('es-CL');
+
+      showToast('success', '¡Reserva Completada!', `Tu código es ${bookingId}. Te esperamos en Hub Providencia.`);
+      goToStep(4);
+    }
+
+    function formatDateToDisplay(isoDate) {
+      if (!isoDate) return '';
+      const [year, month, day] = isoDate.split('-');
+      return `${day}/${month}/${year}`;
+    }
+
+    function resetToStep1() {
+      document.getElementById('reservation-form').reset();
+      document.getElementById('rut-status').innerHTML = '';
+      setupDateInput();
+      goToStep(1);
+    }
+
+    // 6. Módulo y Panel de Administración (Recepción)
+    function toggleAdminModal() {
+      const modal = document.getElementById('modal-admin-login');
+      if (modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden');
+        document.getElementById('admin-password').value = '';
+        document.getElementById('admin-password').focus();
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function handleAdminLogin(e) {
+      e.preventDefault();
+      const pwd = document.getElementById('admin-password').value;
+      if (pwd === 'adminhub123') {
+        isAdminLoggedIn = true;
+        toggleAdminModal();
+        switchView('admin');
+        showToast('success', 'Bienvenido', 'Has ingresado con éxito al panel de recepción.');
+      } else {
+        showToast('error', 'Clave Incorrecta', 'Verifica la contraseña. Demo: adminhub123');
+      }
+    }
+
+    function switchView(viewName) {
+      const bookingView = document.getElementById('view-booking');
+      const adminView = document.getElementById('view-admin');
+
+      if (viewName === 'admin') {
+        if (!isAdminLoggedIn) {
+          toggleAdminModal();
+          return;
+        }
+        bookingView.classList.add('hidden');
+        adminView.classList.remove('hidden');
+        renderAdminReservations();
+      } else {
+        adminView.classList.add('hidden');
+        bookingView.classList.remove('hidden');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function exitAdminView() {
+      isAdminLoggedIn = false;
+      switchView('booking');
+      showToast('info', 'Sesión Cerrada', 'Has vuelto al portal público de reserva.');
+    }
+
+    function renderAdminReservations() {
+      const filterDate = document.getElementById('admin-filter-date').value;
+      const tbody = document.getElementById('admin-reservations-tbody');
+      tbody.innerHTML = '';
+
+      const all = getStoredReservations();
+      const filtered = all.filter(r => r.date === filterDate);
+
+      // Actualizar estadísticas rápidas
+      document.getElementById('stat-total').textContent = filtered.length;
+      document.getElementById('stat-checked').textContent = filtered.filter(r => r.status === 'CHECKED_IN').length;
+      document.getElementById('stat-pending').textContent = filtered.filter(r => r.status === 'CONFIRMED').length;
+      document.getElementById('stat-cancelled').textContent = filtered.filter(r => r.status === 'CANCELLED').length;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-8 text-center text-gray-400">
+              <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
+              No hay reservas registradas para el día ${formatDateToDisplay(filterDate)}.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      // Ordenar por hora de inicio
+      filtered.sort((a, b) => a.slot.localeCompare(b.slot));
+
+      filtered.forEach(res => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-gray-50/80 transition-colors";
+
+        let badgeStatus = '';
+        if (res.status === 'CHECKED_IN') {
+          badgeStatus = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-check"></i> Presente</span>';
+        } else if (res.status === 'CONFIRMED') {
+          badgeStatus = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800"><i class="fa-solid fa-clock"></i> Esperando</span>';
+        } else {
+          badgeStatus = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800"><i class="fa-solid fa-ban"></i> Liberada</span>';
+        }
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-mono font-bold text-gray-700">${res.id}</td>
+          <td class="py-3 px-4">
+            <span class="font-bold text-gob-blue">${ROOMS[res.room] ? ROOMS[res.room].name : res.room}</span>
+            <span class="block text-[10px] text-gray-400">${ROOMS[res.room] ? ROOMS[res.room].capacity + ' pers.' : ''}</span>
+          </td>
+          <td class="py-3 px-4 font-semibold text-gray-800">${res.slot}</td>
+          <td class="py-3 px-4">
+            <div class="font-bold text-gray-900">${res.name}</div>
+            <div class="text-[10px] text-gray-500">${res.rut} · ${res.phone}</div>
+          </td>
+          <td class="py-3 px-4 max-w-xs truncate text-gray-600">${res.motive}</td>
+          <td class="py-3 px-4 text-center">${badgeStatus}</td>
+          <td class="py-3 px-4 text-right space-x-1 whitespace-nowrap">
+            ${res.status === 'CONFIRMED' ? `
+              <button onclick="adminCheckIn('${res.id}')" title="Marcar llegada" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold transition">
+                <i class="fa-solid fa-check mr-1"></i> Check-in
+              </button>
+              <button onclick="adminReleaseNoShow('${res.id}')" title="Liberar por 10 min de retraso" class="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded text-[11px] font-semibold transition">
+                <i class="fa-solid fa-user-xmark"></i> Inasistencia (10m)
+              </button>
+            ` : res.status === 'CHECKED_IN' ? `
+              <button onclick="adminReleaseNoShow('${res.id}')" title="Finalizar o cancelar reserva" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-[11px]">
+                Liberar Sala
+              </button>
+            ` : `
+              <span class="text-[10px] text-gray-400 italic">Sin acciones</span>
+            `}
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Acciones de Recepción / Mesón
+    function adminCheckIn(bookingId) {
+      const all = getStoredReservations();
+      const item = all.find(r => r.id === bookingId);
+      if (item) {
+        item.status = 'CHECKED_IN';
+        saveReservations(all);
+        renderAdminReservations();
+        showToast('success', 'Check-in Confirmado', `El usuario ${item.name} ha sido acreditado en la sala.`);
+      }
+    }
+
+    function adminReleaseNoShow(bookingId) {
+      if (!confirm('¿Deseas liberar este espacio según el protocolo de inasistencia/cancelación?')) return;
+      const all = getStoredReservations();
+      const item = all.find(r => r.id === bookingId);
+      if (item) {
+        item.status = 'CANCELLED';
+        saveReservations(all);
+        renderAdminReservations();
+        showToast('info', 'Sala Liberada', `El bloque ${item.slot} ha quedado disponible para nuevo uso.`);
+      }
+    }
+
+    // Modal Reserva Manual Mesón
+    function openManualBookingModal() {
+      document.getElementById('modal-manual-booking').classList.remove('hidden');
+    }
+
+    function closeManualBookingModal() {
+      document.getElementById('modal-manual-booking').classList.add('hidden');
+    }
+
+    function handleManualBookingSubmit(e) {
+      e.preventDefault();
+      const room = document.getElementById('manual-room').value;
+      const date = document.getElementById('manual-date').value;
+      const slot = document.getElementById('manual-slot').value;
+      const rut = document.getElementById('manual-rut').value;
+      const name = document.getElementById('manual-name').value;
+      const motive = document.getElementById('manual-motive').value;
+
+      const all = getStoredReservations();
+      const conflict = all.some(r => r.room === room && r.date === date && r.slot === slot && r.status !== 'CANCELLED');
+
+      if (conflict) {
+        showToast('error', 'Cruce de Horario', 'Ese bloque ya se encuentra reservado.');
+        return;
+      }
+
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const newRes = {
+        id: `HUB-MESON-${randomSuffix}`,
+        room,
+        date,
+        slot,
+        rut,
+        name,
+        email: 'atencion.meson@hubprovidencia.cl',
+        phone: 'Mesón Central',
+        motive,
+        status: 'CHECKED_IN', // Check-in automático pues está presente
+        createdAt: new Date().toISOString()
+      };
+
+      all.push(newRes);
+      saveReservations(all);
+      closeManualBookingModal();
+      document.getElementById('admin-filter-date').value = date;
+      renderAdminReservations();
+      showToast('success', 'Reserva en Mesón Registrada', `Espacio asignado de inmediato a ${name}.`);
+    }
+
+    // Reiniciar base demo
+    function clearDemoData() {
+      if (confirm('¿Deseas reiniciar las reservas al estado demo inicial?')) {
+        localStorage.removeItem('hub_reservations');
+        initStorage();
+        renderAdminReservations();
+        showToast('info', 'Datos Reiniciados', 'La base local fue restaurada.');
+      }
+    }
+
+    // 7. Helpers de Almacenamiento
+    function getStoredReservations() {
+      try {
+        return JSON.parse(localStorage.getItem('hub_reservations')) || [];
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function saveReservations(data) {
+      localStorage.setItem('hub_reservations', JSON.stringify(data));
+    }
+
+    // 8. Mensajes Toast
+    let toastTimeout = null;
+    function showToast(type, title, message) {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toast-icon');
+      const titleEl = document.getElementById('toast-title');
+      const msgEl = document.getElementById('toast-message');
+
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+
+      if (type === 'success') {
+        toast.className = "fixed bottom-6 right-6 max-w-md bg-white border-l-4 border-emerald-500 rounded-lg shadow-2xl p-4 z-50 fade-in";
+        icon.className = "fa-solid fa-circle-check text-emerald-500 text-xl mr-3";
+      } else if (type === 'error') {
+        toast.className = "fixed bottom-6 right-6 max-w-md bg-white border-l-4 border-rose-500 rounded-lg shadow-2xl p-4 z-50 fade-in";
+        icon.className = "fa-solid fa-circle-xmark text-rose-500 text-xl mr-3";
+      } else if (type === 'warning') {
+        toast.className = "fixed bottom-6 right-6 max-w-md bg-white border-l-4 border-amber-500 rounded-lg shadow-2xl p-4 z-50 fade-in";
+        icon.className = "fa-solid fa-triangle-exclamation text-amber-500 text-xl mr-3";
+      } else {
+        toast.className = "fixed bottom-6 right-6 max-w-md bg-white border-l-4 border-gob-blue rounded-lg shadow-2xl p-4 z-50 fade-in";
+        icon.className = "fa-solid fa-circle-info text-gob-blue text-xl mr-3";
+      }
+
+      toast.classList.remove('hidden');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        closeToast();
+      }, 4500);
+    }
+
+    function closeToast() {
+      document.getElementById('toast').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
