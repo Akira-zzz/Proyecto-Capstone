@@ -24,7 +24,7 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- CONFIGURACIÓN DE SUPABASE (REEMPLAZA ESTOS DOS VALORES CON LOS DE TU PROYECTO) -->
+    <!-- CONFIGURACIÓN DE SUPABASE -->
     <script>
         const SUPABASE_URL = 'https://kewxzsqyzshlusjdmeua.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_gDyAsAbt07_841sn9WGDSg_c5jWtmVv';
@@ -486,7 +486,6 @@
             btn.textContent = 'Confirmar Reserva';
 
             if (error) {
-                // Código 23505 en PostgreSQL significa violación del índice único (alguien reservó 1 segundo antes)
                 if (error.code === '23505') {
                     alert('⚠️ Lo sentimos, otro usuario acaba de reservar este bloque horario hace unos instantes. Por favor seleccione otro bloque.');
                     goToStep2();
